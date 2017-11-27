@@ -1,7 +1,8 @@
-tensorflow==1.2
+tensorflow-gpu
+numpy
 scipy
 scikit-learn
-opencv-python
+# opencv-python
 h5py
 matplotlib
 Pillow

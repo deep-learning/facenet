@@ -3,6 +3,65 @@
 [travis-image]: http://travis-ci.org/davidsandberg/facenet.svg?branch=master
 [travis]: http://travis-ci.org/davidsandberg/facenet
 
+## Possible Improvements
+
+- Add random translation and horizontal flipping of images? (already done)
+  - This has been added some time ago (facenet_train.py --random_crop --random_flip ...). However it does not give any imporvement on the results.
+- train with better face alignment (https://github.com/davidsandberg/facenet/issues/19)
+  - MTCNN has been shown to improve the performance significantly, so that should be used instead.
+- How to improve accuracy 
+  - Yes, I guess this is the main question and I don't have the final answer. But I think part of the answer will be to use a larger set of training data, for example a combination of the VGG Face dataset and FaceScrub. But it will most likely include a larger network (including larger input images).
+   In addition to this there will most certainly be other things that help to improve performance, like using dropout, use augumented training data (flipping and translations), maybe better weight initialization etc etc.
+ - But if you want to do image classification this is not as straight forward. The best way is to replace the top layer of the model (i.e. the linear mapping to the 128-dimensional embedding) with a linear mapping to a vector with the same dimension as there are classes, and then calculate a loss using soft max.
+  I have recently started to work on this, mainly in order to get better filters, but it is far(!) from finished. But you can have a look at it on the branch classifier_pretrain. The facenet_train module can be found here.
+  The code seems to be running and learning something but that's all i can say...
+- training dataset and testing dataset should use same face alignment so LFW dataset and training dataset should use same face alignment and I reproduce the same accurary as the author did
+- MS-Celeb-V1 (https://github.com/davidsandberg/facenet/issues/48)
+- https://github.com/davidsandberg/facenet/issues/48
+- https://github.com/davidsandberg/facenet/issues/152
+- train step (https://github.com/davidsandberg/facenet/issues/49)
+- how much time does it take you to train a model with 0.919 accuracy on LFW?
+  -  It depends on a few factors, e.g. how fast your disk is, how fast the triplet selection can run on the CPU and how fast the training on the GPU is. For me it takes roughly 72 hours to train for 500 000 steps with triplet loss and the nn4 model. 
+- Yes, the embeddings that are calculated by facenet are in the Euclidean space where distances
+  directly correspond to a measure of face similarity. The embeddings can then be used for verification, recognition and clustering.
+- The MTCNN is very good at detecting profile faces which is very nice. But it's not clear to me how to apply a 2D transformation that does not cause severe distortions to e.g. profile faces (where estimated positions for the eyes will be in the same position). I know that for example DeepFace uses 3D alignment which seems to work pretty well, but I guess it becomes algorithmically more tricky.
+  So far my approach has been to just use the face bounding box and let the model generalize over different face poses.
+- I understand. Well, in my opinion a 2D alignment wouldn't distort the image, as we just need to rotate in a way that the face stays in vertical position (just think of cases where the neck is bent to one side and the face is not completely in vertical position). The reason is that the convolution is invariant to translation but not rotation, so I think it would improve in some way. I am going to perform some experiments with 2D alignment, I also have code for 3D alignment that I will try as well.
+  - @davidsandberg, I tried the 2D alignment as I mentioned above, then I got this:
+    
+    Runnning forward pass on LFW images
+    Accuracy: 0.985+-0.006
+    Validation rate: 0.90600+-0.02119 @ FAR=0.00069
+    
+    Any thoughts? It is a very slightly improvement I guess
+- Training and validation image pre-processing
+  - Hi @davidsandberg, can you explain what pre-processing step do you apply during the training and the validation process. I notice that in the training code (classification) the images are not pre-whitened and the features are not l2 normalized. This is not the case in the validation step. Is it right ?
+```aidl
+For training using facenet_train_classifier.py the preprocessing is done in facenet.read_and_augument_data(...) as
+
+ for _ in range(nrof_preprocess_threads):
+        image, label = read_images_from_disk(input_queue)
+        if random_crop:
+            image = tf.random_crop(image, [image_size, image_size, 3])
+        else:
+            image = tf.image.resize_image_with_crop_or_pad(image, image_size, image_size)
+        if random_flip:
+            image = tf.image.random_flip_left_right(image)
+        #pylint: disable=no-member
+        image.set_shape((image_size, image_size, 3))
+        image = tf.image.per_image_whitening(image)
+        images_and_labels.append([image, label])
+So there is a pre-whitening step here as well.
+```
+- what is the image size for those pre-trained model
+  - Since it's a CNN the input size is not that crucial and it can work fine with other image sizes as well. But of course, if the input images are too small the number of activations in the higher layers of the network will become to few and then it will crash. Also, if the input image size is changed the number of parameters in the resulting CNN will change as well, which means that training could require a different weight decay etc.
+- facenet pruning
+- 
+
+
+
+![Travis](http://travis-ci.org/davidsandberg/facenet.svg?branch=master)
+
 This is a TensorFlow implementation of the face recognizer described in the paper
 ["FaceNet: A Unified Embedding for Face Recognition and Clustering"](http://arxiv.org/abs/1503.03832). The project also uses ideas from the paper ["A Discriminative Feature Learning Approach for Deep Face Recognition"](http://ydwen.github.io/papers/WenECCV16.pdf) as well as the paper ["Deep Face Recognition"](http://www.robots.ox.ac.uk/~vgg/publications/2015/Parkhi15/parkhi15.pdf) from the [Visual Geometry Group](http://www.robots.ox.ac.uk/~vgg/) at Oxford.
 
