@@ -38,3 +38,10 @@ print(E.eval())
 # computation when returning a value.
 print("E with customize intermediate var d as 4: ", sess.run(E, feed_dict={d: 4.}))
 print("E with customize intermediate const var as 4: ", sess.run(E, feed_dict={c: 100.}))
+
+with tf.Session() as sess:
+    fetches = [c, d, b, E]
+    outs = sess.run(fetches)
+    print('outs={}'.format(outs))
+    print(type(outs))
+    print(type(outs[0]))
