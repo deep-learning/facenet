@@ -290,6 +290,9 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
         duration = time.time() - start_time
         print('Epoch: [%d][%d/%d]\tTime %.3f\tLoss %2.3f\tRegLoss %2.3f' %
               (epoch, batch_number+1, args.epoch_size, duration, err, np.sum(reg_loss)))
+        if np.math.isnan(err) or np.math.isnan(np.sum(reg_loss)):
+            print("error occurred during last training, exiting...")
+            sys.exit(-1)
         batch_number += 1
         train_time += duration
     # Add validation loss and accuracy to summary
