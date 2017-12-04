@@ -299,6 +299,7 @@ def get_triplet_batch(triplets, batch_index, batch_size):
     return batch
 
 def get_learning_rate_from_file(filename, epoch):
+    learning_rate = 0.1
     with open(filename, 'r') as f:
         for line in f.readlines():
             line = line.split('#', 1)[0]
@@ -308,8 +309,7 @@ def get_learning_rate_from_file(filename, epoch):
                 lr = float(par[1])
                 if e <= epoch:
                     learning_rate = lr
-                else:
-                    return learning_rate
+    return learning_rate
 
 class ImageClass():
     "Stores the paths to images for a given class"
@@ -549,3 +549,4 @@ def write_arguments_to_file(args, filename):
     with open(filename, 'w') as f:
         for key, value in iteritems(vars(args)):
             f.write('%s: %s\n' % (key, str(value)))
+
