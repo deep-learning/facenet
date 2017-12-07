@@ -47,6 +47,10 @@ def main(args):
                 ret, frame = cap.read()
                 if ret and frame is not None:
                     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    frame_rgb = cv2.resize(
+                        frame_rgb,
+                        (int(frame.width / args.resize_scale), int(frame.height / args.resize_scale))
+                    )
                     filename_base = current_milli_time()
                     bounding_boxes, points = detect_face(frame_rgb, minsize, pnet, rnet, onet, threshold, factor)
                     nrof_faces = bounding_boxes.shape[0]
@@ -145,6 +149,13 @@ def parse_argument(argv):
         type=int,
         help='cropped face margin',
         default=100
+    )
+
+    parser.add_argument(
+        '--resize_scale',
+        type=float,
+        help='scale down to speed up processing speed',
+        default=4.0
     )
 
     return parser.parse_args(argv)
