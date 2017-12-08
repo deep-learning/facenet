@@ -147,11 +147,12 @@ def process(args, seq_num, dataset, output_dir, queue):
                             det_arr = []
                             img_size = np.asarray(img.shape)[0:2]
                             if nrof_faces > 1:
+                                if args.warn_multiple_faces:
+                                    pprint('WARN: {} has {} faces'.format(image_path, nrof_faces))
+
                                 if args.detect_multiple_faces:
                                     for i in range(nrof_faces):
                                         det_arr.append(np.squeeze(det[i]))
-                                if args.warn_multiple_faces:
-                                    pprint('WARN: {} has {} faces'.format(image_path, nrof_faces))
                                 else:
                                     bounding_box_size = (det[:, 2] - det[:, 0]) * (det[:, 3] - det[:, 1])
                                     img_center = img_size / 2
