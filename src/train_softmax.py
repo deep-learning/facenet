@@ -404,8 +404,8 @@ def parse_arguments(argv):
         help='Performs random rotations of training images.', action='store_true')
     parser.add_argument('--keep_probability', type=float,
         help='Keep probability of dropout for the fully connected layer(s).', default=1.0)
-    parser.add_argument('--intra_op_parallelism_threads', type=int, help='', default=48)
-    parser.add_argument('--inter_op_parallelism_threads', type=int, help='', default=48)
+    parser.add_argument('--intra_op_parallelism_threads', type=int, help='', default=4)
+    parser.add_argument('--inter_op_parallelism_threads', type=int, help='', default=4)
 
     parser.add_argument('--weight_decay', type=float,
         help='L2 weight regularization.', default=0.0)
