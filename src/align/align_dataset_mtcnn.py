@@ -96,7 +96,7 @@ def process(args, seq_num, dataset, output_dir, queue):
         )
         with sess.as_default():
             pnet, rnet, onet = align.detect_face.create_mtcnn(sess, None)
-    minsize = 20  # minimum size of face
+    minsize = args.min_face_size  # minimum size of face
     threshold = [0.6, 0.7, 0.7]  # three steps's threshold
     factor = 0.709  # scale factor
     # Add a random key to the filename to allow alignment using multiple processes
@@ -218,6 +218,9 @@ def parse_arguments(argv):
     parser.add_argument('--margin', type=int,
         help='Margin for the crop around the bounding box (height, width) in pixels.',
         default=44)
+    parser.add_argument('--min_face_size', type=int,
+        help='minimal face size',
+        default=20)
     # parser.add_argument('--random_order',
     #     help='Shuffles the order of images to enable alignment using multiple processes.',
     #     action='store_true')
