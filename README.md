@@ -11,6 +11,11 @@ export CUDA_VISIBLE_DEVICES=''
 python3 src/align/align_dataset_mtcnn.py ~/datasets/lfw/raw ~/datasets/lfw/lfw_mtcnnpy_160_margin_0_test --image_size 160 --margin 0 --gpu_memory_fraction 0.2 --resize --warn_multiple_faces --parallelism 48
 ```
 
+## Current dataset
+
+- MS-Celeb-1M 
+  - *clean*  79078 -> 5049824
+
 ## Possible Improvements
 
 - Add random translation and horizontal flipping of images? (already done)

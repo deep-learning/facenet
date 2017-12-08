@@ -35,7 +35,6 @@ import numpy as np
 import sys
 import tensorflow as tf
 from scipy import misc
-
 from time import sleep, time
 
 import align.detect_face
@@ -156,13 +155,11 @@ def process(args, seq_num, dataset, output_dir, queue):
                                 else:
                                     bounding_box_size = (det[:, 2] - det[:, 0]) * (det[:, 3] - det[:, 1])
                                     img_center = img_size / 2
-                                    offsets = np.vstack(
-                                        [(det[:, 0] + det[:, 2]) / 2 - img_center[1], (det[:, 1] + det[:, 3]) / 2 -
-                                         img_center[0]])
-                                    offset_dist_squared = np.sum(
-                                        np.power(offsets, 2.0), 0)
-                                    index = np.argmax(
-                                        bounding_box_size - offset_dist_squared * 2.0)  # some extra weight on the centering
+                                    offsets = np.vstack([(det[:, 0] + det[:, 2]) / 2 - img_center[1],
+                                                         (det[:, 1] + det[:, 3]) / 2 - img_center[0]])
+                                    offset_dist_squared = np.sum(np.power(offsets, 2.0), 0)
+                                    # some extra weight on the centering
+                                    index = np.argmax(bounding_box_size - offset_dist_squared * 2.0)
                                     det_arr.append(det[index, :])
                             else:
                                 det_arr.append(np.squeeze(det))
