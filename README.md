@@ -3,6 +3,14 @@
 [travis-image]: http://travis-ci.org/davidsandberg/facenet.svg?branch=master
 [travis]: http://travis-ci.org/davidsandberg/facenet
 
+## Alignment
+
+``` 
+export PYTHONPATH=$PYTHONPATH:$HOME/repo/facenet/src
+export CUDA_VISIBLE_DEVICES=''
+python3 src/align/align_dataset_mtcnn.py ~/datasets/lfw/raw ~/datasets/lfw/lfw_mtcnnpy_160_margin_0_test --image_size 160 --margin 0 --gpu_memory_fraction 0.2 --resize --warn_multiple_faces --parallelism 48
+```
+
 ## Possible Improvements
 
 - Add random translation and horizontal flipping of images? (already done)

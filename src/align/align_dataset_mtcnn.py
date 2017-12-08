@@ -26,17 +26,24 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import multiprocessing
 import os
 import random
-import sys
-from time import sleep
+from multiprocessing import Process, Queue
 
 import numpy as np
+import sys
 import tensorflow as tf
 from scipy import misc
 
+from time import sleep, time
+
 import align.detect_face
 import facenet
+
+
+def split_chunks(l, n=2):
+    return np.array_split(l, n)
 
 
 def main(args):
@@ -49,8 +56,35 @@ def main(args):
     facenet.store_revision_info(src_path, output_dir, ' '.join(sys.argv))
     dataset = facenet.get_dataset(args.input_dir)
 
-    print('Creating networks and loading parameters')
+    if args.parallelism:
+        n = args.parallelism
+    else:
+        n = multiprocessing.cpu_count()
 
+    print("spawn {} parallel tasks to process {} subjects".format(n, len(dataset)))
+
+    # split the data set
+    jobs = []
+    queue = Queue()
+    print(len(dataset))
+    n_parts = list(split_chunks(dataset, n))
+    for i in range(n):
+        print(len(n_parts[i]))
+        p = Process(target=process, args=(args, i, n_parts[i], output_dir, queue))
+        p.start()
+        jobs.append(p)
+
+    for p in jobs:
+        p.join()
+
+    mx = []
+    while not queue.empty():
+        mx.append(queue.get())
+
+
+def process(args, seq_num, dataset, output_dir, queue):
+    pprint = lambda x: print("task {}->{}".format(seq_num, x))
+    start = time()
     with tf.Graph().as_default():
         gpu_options = tf.GPUOptions(
             per_process_gpu_memory_fraction=args.gpu_memory_fraction
@@ -63,43 +97,38 @@ def main(args):
         )
         with sess.as_default():
             pnet, rnet, onet = align.detect_face.create_mtcnn(sess, None)
-
     minsize = 20  # minimum size of face
     threshold = [0.6, 0.7, 0.7]  # three steps's threshold
     factor = 0.709  # scale factor
-
     # Add a random key to the filename to allow alignment using multiple processes
-    random_key = np.random.randint(0, high=99999)
-    bounding_boxes_filename = os.path.join(output_dir,
-        'bounding_boxes_%05d.txt' % random_key)
-
+    bounding_boxes_filename = os.path.join(output_dir, 'bounding_boxes_%05d.txt' % seq_num)
     with open(bounding_boxes_filename, "w") as text_file:
         nrof_images_total = 0
         nrof_successfully_aligned = 0
-        if args.random_order:
-            random.shuffle(dataset)
-        for cls in dataset:
+        # if args.random_order:
+        #     random.shuffle(dataset)
+        for ix, cls in enumerate(dataset):
             output_class_dir = os.path.join(output_dir, cls.name)
+            if ix % 100 == 0:
+                pprint("processed {}/{}".format(ix, len(dataset)))
             if not os.path.exists(output_class_dir):
                 os.makedirs(output_class_dir)
-                if args.random_order:
-                    random.shuffle(cls.image_paths)
+                # if args.random_order:
+                #     random.shuffle(cls.image_paths)
             for image_path in cls.image_paths:
                 nrof_images_total += 1
                 filename = os.path.splitext(os.path.split(image_path)[1])[0]
-                output_filename = os.path.join(output_class_dir,
-                    filename + '.png')
-                print(image_path)
+                output_filename = os.path.join(output_class_dir, filename + '.png')
+                # pprint(image_path)
                 if not os.path.exists(output_filename):
                     try:
                         img = misc.imread(image_path)
                     except (IOError, ValueError, IndexError) as e:
-                        errorMessage = '{}: {}'.format(image_path, e)
-                        print(errorMessage)
+                        pprint('{}: {}'.format(image_path, e))
                     else:
                         if img.ndim < 2:
-                            print('Unable to align "%s"' % image_path)
-                            text_file.write('%s\n' % (output_filename))
+                            pprint('Unable to align "%s"' % image_path)
+                            text_file.write('%s\n' % output_filename)
                             continue
                         if img.ndim == 2:
                             img = facenet.to_rgb(img)
@@ -121,6 +150,8 @@ def main(args):
                                 if args.detect_multiple_faces:
                                     for i in range(nrof_faces):
                                         det_arr.append(np.squeeze(det[i]))
+                                if args.warn_multiple_faces:
+                                    pprint('WARN: {} has {} faces'.format(image_path, nrof_faces))
                                 else:
                                     bounding_box_size = (det[:, 2] - det[:, 0]) * (det[:, 3] - det[:, 1])
                                     img_center = img_size / 2
@@ -144,31 +175,30 @@ def main(args):
                                 bb[3] = np.minimum(det[3] + args.margin / 2, img_size[0])
                                 cropped = img[bb[1]:bb[3], bb[0]:bb[2], :]
                                 if args.resize:
-                                    scaled = misc.imresize(cropped, (
-                                        args.image_size, args.image_size),
+                                    scaled = misc.imresize(
+                                        cropped,
+                                        (args.image_size, args.image_size),
                                         interp='bilinear')
                                 else:
                                     scaled = cropped
                                 nrof_successfully_aligned += 1
-                                filename_base, file_extension = os.path.splitext(
-                                    output_filename)
+                                filename_base, file_extension = os.path.splitext(output_filename)
                                 if args.detect_multiple_faces:
-                                    output_filename_n = "{}_{}{}".format(
-                                        filename_base, i, file_extension)
+                                    output_filename_n = "{}_{}{}".format(filename_base, i, file_extension)
                                 else:
-                                    output_filename_n = "{}{}".format(
-                                        filename_base, file_extension)
+                                    output_filename_n = "{}{}".format(filename_base, file_extension)
                                 misc.imsave(output_filename_n, scaled)
                                 text_file.write('%s %d %d %d %d\n' % (
                                     output_filename_n, bb[0], bb[1], bb[2],
                                     bb[3]))
                         else:
-                            print('Unable to align "%s"' % image_path)
-                            text_file.write('%s\n' % (output_filename))
+                            pprint('Unable to align "%s"' % image_path)
+                            text_file.write('%s\n' % output_filename)
 
-    print('Total number of images: %d' % nrof_images_total)
-    print(
-        'Number of successfully aligned images: %d' % nrof_successfully_aligned)
+    end = time()
+    pprint('Total number of images: %d' % nrof_images_total)
+    pprint('Number of successfully aligned images: %d' % nrof_successfully_aligned)
+    pprint('time cost: {}'.format(end - start))
 
 
 def parse_arguments(argv):
@@ -179,22 +209,28 @@ def parse_arguments(argv):
     parser.add_argument('output_dir', type=str,
         help='Directory with aligned face thumbnails.')
     parser.add_argument('--image_size', type=int,
-        help='Image size (height, width) in pixels. 182 default?',
+        help='Image size (height, width) in pixels. 182 default',
         default=182)
+    parser.add_argument('--parallelism', type=int,
+        help='number of Parallel processing',
+        default=multiprocessing.cpu_count())
     parser.add_argument('--resize',
         help='turn on/off resize',
         action='store_true')
     parser.add_argument('--margin', type=int,
         help='Margin for the crop around the bounding box (height, width) in pixels.',
         default=44)
-    parser.add_argument('--random_order',
-        help='Shuffles the order of images to enable alignment using multiple processes.',
-        action='store_true')
+    # parser.add_argument('--random_order',
+    #     help='Shuffles the order of images to enable alignment using multiple processes.',
+    #     action='store_true')
     parser.add_argument('--gpu_memory_fraction', type=float,
         help='Upper bound on the amount of GPU memory that will be used by the process.',
         default=1.0)
     parser.add_argument('--detect_multiple_faces',
         help='Detect and align multiple faces per image.',
+        action='store_true')
+    parser.add_argument('--warn_multiple_faces',
+        help='warn if multiple faces are detected in image',
         action='store_true')
     return parser.parse_args(argv)
 
