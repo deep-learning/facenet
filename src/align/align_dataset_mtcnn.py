@@ -177,10 +177,13 @@ def process(args, seq_num, dataset, output_dir, queue):
                                 bb[3] = np.minimum(det[3] + args.margin / 2, img_size[0])
                                 cropped = img[bb[1]:bb[3], bb[0]:bb[2], :]
                                 if args.resize:
-                                    scaled = misc.imresize(
-                                        cropped,
-                                        (args.image_size, args.image_size),
-                                        interp='bilinear')
+                                    try:
+                                        scaled = misc.imresize(
+                                            cropped,
+                                            (args.image_size, args.image_size),
+                                            interp='bilinear')
+                                    except ValueError: # todo: fix this
+                                        continue
                                 else:
                                     scaled = cropped
                                 nrof_successfully_aligned += 1
