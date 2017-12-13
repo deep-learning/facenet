@@ -149,6 +149,10 @@ def process(args, seq_num, dataset, output_dir, queue):
                                 if args.warn_multiple_faces:
                                     pprint('WARN: {} has {} faces'.format(image_path, nrof_faces))
 
+                                if args.skip_multiple_faces:
+                                    pprint('skipping {}'.format(image_path))
+                                    continue
+
                                 if args.detect_multiple_faces:
                                     for i in range(nrof_faces):
                                         det_arr.append(np.squeeze(det[i]))
@@ -229,6 +233,9 @@ def parse_arguments(argv):
         default=1.0)
     parser.add_argument('--detect_multiple_faces',
         help='Detect and align multiple faces per image.',
+        action='store_true')
+    parser.add_argument('--skip_multiple_faces',
+        help='skip align if multiple faces',
         action='store_true')
     parser.add_argument('--warn_multiple_faces',
         help='warn if multiple faces are detected in image',
