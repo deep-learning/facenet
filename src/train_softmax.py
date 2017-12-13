@@ -88,7 +88,7 @@ def main(args):
 
     with tf.Graph().as_default():
         tf.set_random_seed(args.seed)
-        global_step = tf.Variable(args.global_step, trainable=False)
+        global_step = tf.Variable(0, trainable=False)
 
         # Get a list of image paths and their labels
         image_list, label_list = facenet.get_image_paths_and_labels(train_set)
@@ -218,13 +218,14 @@ def main(args):
             epoch = 0
             while epoch < args.max_nrof_epochs:
                 step = sess.run(global_step, feed_dict=None)
+                print("current step: {}".format(step))
                 epoch = step // args.epoch_size
                 # Train for one epoch
                 train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_op, image_paths_placeholder,
                     labels_placeholder,
                     learning_rate_placeholder, phase_train_placeholder, batch_size_placeholder, global_step,
                     total_loss, train_op, summary_op, summary_writer, regularization_losses,
-                    args.learning_rate_schedule_file)
+                    args.learning_rate_schedule_file, args.global_step)
 
                 # Save variables and the metagraph if it doesn't exist already
                 save_variables_and_metagraph(sess, saver, summary_writer, model_dir, subdir, step)
@@ -274,14 +275,16 @@ def filter_dataset(dataset, data_filename, percentile, min_nrof_images_per_class
 def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_op, image_paths_placeholder,
     labels_placeholder,
     learning_rate_placeholder, phase_train_placeholder, batch_size_placeholder, global_step,
-    loss, train_op, summary_op, summary_writer, regularization_losses, learning_rate_schedule_file):
+    loss, train_op, summary_op, summary_writer, regularization_losses, learning_rate_schedule_file,
+    learning_rate_epoch_from=0):
     batch_number = 0
 
     if args.learning_rate > 0.0:
         lr = args.learning_rate
     else:
-        lr = facenet.get_learning_rate_from_file(learning_rate_schedule_file, epoch)
+        lr = facenet.get_learning_rate_from_file(learning_rate_schedule_file, epoch + learning_rate_epoch_from)
 
+    print("epoch: {}, learning rate:{}".format(epoch, lr))
     index_epoch = sess.run(index_dequeue_op)
     label_epoch = np.array(label_list)[index_epoch]
     image_epoch = np.array(image_list)[index_epoch]
@@ -297,7 +300,7 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
         start_time = time.time()
         feed_dict = {learning_rate_placeholder: lr, phase_train_placeholder: True,
                      batch_size_placeholder: args.batch_size}
-        if (batch_number % 100 == 0):
+        if batch_number % 100 == 0:
             err, _, step, reg_loss, summary_str = sess.run(
                 [loss, train_op, global_step, regularization_losses, summary_op], feed_dict=feed_dict)
             summary_writer.add_summary(summary_str, global_step=step)
@@ -455,7 +458,7 @@ def parse_arguments(argv):
     parser.add_argument('--filter_filename', type=str,
         help='File containing image data used for dataset filtering', default='')
     parser.add_argument('--global_step', type=int,
-        help='Start training from a global step, easier restore model',
+        help='Start training from a specific epoch, easier restore model',
         default=0)
     parser.add_argument('--filter_percentile', type=float,
         help='Keep only the percentile images closed to its class center', default=100.0)
