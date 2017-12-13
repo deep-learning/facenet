@@ -26,17 +26,20 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow as tf
-import numpy as np
 import argparse
-import facenet
 import os
-import sys
-import time
+
 import h5py
 import math
-from tensorflow.python.platform import gfile
+import numpy as np
+import sys
+import tensorflow as tf
+import time
 from six import iteritems
+from tensorflow.python.platform import gfile
+
+import facenet
+
 
 def main(args):
     dataset = facenet.get_dataset(args.dataset_dir)
@@ -46,11 +49,9 @@ def main(args):
         # Get a list of image paths and their labels
         image_list, label_list = facenet.get_image_paths_and_labels(dataset)
         nrof_images = len(image_list)
-        image_indices = range(nrof_images)
+        image_indices = list(range(nrof_images))
 
-        image_batch, label_batch = facenet.read_and_augment_data(image_list,
-            image_indices, args.image_size, args.batch_size, None, 
-            False, False, False, nrof_preprocess_threads=4, shuffle=False)
+        image_batch, label_batch = facenet.read_and_augment_data(image_list, image_indices, args.image_size, args.batch_size, None, False, False, False, nrof_preprocess_threads=4, shuffle=False)
         
         model_exp = os.path.expanduser(args.model_file)
         with gfile.FastGFile(model_exp,'rb') as f:
@@ -61,7 +62,14 @@ def main(args):
         
         embeddings = tf.get_default_graph().get_tensor_by_name("net/embeddings:0")
 
-        with tf.Session() as sess:
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=args.gpu_memory_fraction)
+        config = tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False)
+        # if args.intra_op_parallelism_threads:
+        #     config.intra_op_parallelism_threads = args.intra_op_parallelism_threads
+        # if args.inter_op_parallelism_threads:
+        #     config.inter_op_parallelism_threads = args.inter_op_parallelism_threads
+        sess = tf.Session(config=config)
+        with sess:
             tf.train.start_queue_runners(sess=sess)
                 
             embedding_size = int(embeddings.get_shape()[1])
@@ -122,6 +130,8 @@ def parse_arguments(argv):
         help='Image size.', default=160)
     parser.add_argument('--batch_size', type=int,
         help='Number of images to process in a batch.', default=90)
+    parser.add_argument('--gpu_memory_fraction', type=float,
+        help='', default=0.4)
     return parser.parse_args(argv)
 
 if __name__ == '__main__':
