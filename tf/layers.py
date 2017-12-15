@@ -33,9 +33,14 @@ if __name__ == '__main__':
         i_2 = tf.placeholder(tf.float32, [1000, 784], name='i_2')
         simple_network(i_2)
 
-    with tf.device('/gpu:2'):
-        a = tf.constant([1., 2., 3., 4.], shape=[2, 2], name='a')
-        b = tf.constant([1., 2.], shape=[2, 1], name='b')
-        c = tf.matmul(a, b)
-        with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)) as sess:
-            print(sess.run(c))
+    c = []
+    for d in ['/gpu:0', '/gpu:1']:
+        with tf.device(d):
+            a = tf.constant([1., 2., 3., 4.], shape=[2, 2], name='a')
+            b = tf.constant([1., 2.], shape=[2, 1], name='b')
+            c.append(tf.matmul(a, b))
+    with tf.device('/cpu:0'):
+        sum = tf.add_n(c)
+
+    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
+        print(sess.run(sum))
