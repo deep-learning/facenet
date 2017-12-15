@@ -66,6 +66,7 @@ def get_paths(lfw_dir, pairs, file_ext):
     
     return path_list, issame_list
 
+
 def read_pairs(pairs_filename):
     pairs = []
     with open(pairs_filename, 'r') as f:
@@ -73,6 +74,7 @@ def read_pairs(pairs_filename):
             pair = line.strip().split()
             pairs.append(pair)
     return np.array(pairs)
+
 
 
 
