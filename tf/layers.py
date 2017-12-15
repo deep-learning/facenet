@@ -32,3 +32,7 @@ if __name__ == '__main__':
         scope.reuse_variables()
         i_2 = tf.placeholder(tf.float32, [1000,784], name='i_2')
         simple_network(i_2)
+
+    with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+        pass
+
