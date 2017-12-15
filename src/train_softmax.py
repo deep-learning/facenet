@@ -49,7 +49,7 @@ import lfw
 def main(args):
     network = importlib.import_module(args.model_def)
 
-    subdir = datetime.strftime(datetime.now(), '%Y%m%d-%H%M%S')
+    subdir = "{}-{}".format(datetime.strftime(datetime.now(), '%Y%m%d-%H%M%S'), args.short_desc)
     log_dir = os.path.join(os.path.expanduser(args.logs_base_dir), subdir)
     if not os.path.isdir(log_dir):  # Create the log directory if it doesn't exist
         os.makedirs(log_dir)
@@ -390,6 +390,8 @@ def save_variables_and_metagraph(sess, saver, summary_writer, model_dir, model_n
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--short_desc', type=str,
+        help='Short description of the train goal', default="")
     parser.add_argument('--logs_base_dir', type=str,
         help='Directory where to write event logs.', default='~/logs/facenet')
     parser.add_argument('--models_base_dir', type=str,
