@@ -30,9 +30,12 @@ if __name__ == '__main__':
         i_1 = tf.placeholder(tf.float32, [1000, 784], name='i_1')
         simple_network(i_1)
         scope.reuse_variables()
-        i_2 = tf.placeholder(tf.float32, [1000,784], name='i_2')
+        i_2 = tf.placeholder(tf.float32, [1000, 784], name='i_2')
         simple_network(i_2)
 
-    with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
-        pass
-
+    with tf.device('/gpu:2'):
+        a = tf.constant([1., 2., 3., 4.], shape=[2, 2], name='a')
+        b = tf.constant([1., 2.], shape=[2, 1], name='b')
+        c = tf.matmul(a, b)
+        with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)) as sess:
+            print(sess.run(c))
