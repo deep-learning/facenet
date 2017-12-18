@@ -11,6 +11,25 @@ def bias_variable(shape, name=None):
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial_value=initial, name=name)
 
+def conv2d(x, W, name=None):
+    return tf.nn.conv2d(x,
+                        W,
+                        strides=[1, 1, 1, 1],
+                        padding='SAME',
+                        data_format='NHWC',
+                        name=name)
+
+def max_pool_2x2(x):
+    return tf.nn.max_pool(x,
+                          ksize=[1, 2, 2, 1],
+                          strides=[1, 2, 2, 1],
+                          padding='SAME')
+
+def conv_layer(input, shape):
+    W = weight_variable(shape=shape)
+    b = bias_variable(shape[3])
+    return tf.nn.relu(conv2d(input, W) + b)
+
 sess = tf.InteractiveSession()
 w = weight_variable([12, 100])
 tf.global_variables_initializer().run()
