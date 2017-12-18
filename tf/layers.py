@@ -23,7 +23,8 @@ def simple_network(input):
 
     return output_3
 
-# name_scopesymotion-prefix)w 是给op_name加前缀, variable_scope是给get_variable()创建的变量的名字加前缀。
+# name_scopes 是给op_name加前缀
+# variable_scope是给get_variable()创建的变量的名字加前缀。
 # todo ???
 if __name__ == '__main__':
     with tf.variable_scope("shared_variables") as scope:
