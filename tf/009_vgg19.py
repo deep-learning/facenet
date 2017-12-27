@@ -8,6 +8,8 @@ import numpy as np
 import sys
 import tensorflow as tf
 
+# todo https://gist.github.com/zhenglaizhang/f672f72d854d89d20c4dd1f1cece662e
+
 def max_pooling_layer(x, kHeight, kWidth, strideX, strideY, name, padding='SAME'):
     return tf.nn.max_pool(x,
                           ksize=[1, kHeight, kWidth, 1],
