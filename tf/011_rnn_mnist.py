@@ -3,6 +3,8 @@ import os
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
+# todo http://colah.github.io/posts/2015-08-Understanding-LSTMs/
+
 sess = tf.InteractiveSession()
 mnist = input_data.read_data_sets(os.path.expanduser('~/data/mnist'),
                                   one_hot=True)
