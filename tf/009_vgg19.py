@@ -9,6 +9,7 @@ import sys
 import tensorflow as tf
 
 # todo https://gist.github.com/zhenglaizhang/f672f72d854d89d20c4dd1f1cece662e
+# todo conv2d http://www.cnblogs.com/welhzh/p/6607581.html
 
 def max_pooling_layer(x, kHeight, kWidth, strideX, strideY, name, padding='SAME'):
     return tf.nn.max_pool(x,
