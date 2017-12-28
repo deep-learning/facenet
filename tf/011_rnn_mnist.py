@@ -20,14 +20,6 @@ n_classes = 10
 x = tf.placeholder(tf.float32, [None, n_steps, n_input])
 y = tf.placeholder(tf.float32, [None, n_classes])
 
-def RNN(x, weight, biases):
-    # x shape (batch_size, n_steps, n_input)
-    # desired shape: list of n_steps with element shape (batch size, n_input)
-    x = tf.transpose(x, [1, 0, 2])
-    x = tf.reshape(x, [-1, n_input])
-    x = tf.split(x, num_or_size_splits=n_steps, axis=0)
-    outputs = []
-
 def RNN(x, n_steps, n_input, n_hidden, n_classes):
     # parameters
     # input gate: input, previous input, and bias
@@ -35,7 +27,7 @@ def RNN(x, n_steps, n_input, n_hidden, n_classes):
     im = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], mean=-0.1, stddev=0.1))
     ib = tf.Variable(tf.zeros([1, n_hidden]))
 
-    # forget date: input, previous output, and bias
+    # forget gate: input, previous output, and bias
     fx = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
     fm = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
     fb = tf.Variable(tf.zeros([1, n_hidden]))
@@ -55,12 +47,12 @@ def RNN(x, n_steps, n_input, n_hidden, n_classes):
     b = tf.Variable(tf.zeros([n_classes]))
 
     # definition of the cell computation
-    def lstm_cell(i, o, state):
-        input_gate = tf.sigmoid(tf.matmul(i, ix) + tf.matmul(o, im) + ib)
-        forget_gate = tf.sigmoid(tf.matmul(i, fx) + tf.matmul(o, fm) + fb)
-        update = tf.tanh(tf.matmul(i, cx) + tf.matmul(o, cm) + cb)
-        state = forget_gate * state + input_gate * update
-        output_gate = tf.sigmoid(tf.matmul(i, ox) + tf.matmul(o, om) + ob)
+    def lstm_cell(i, prev_output, prev_state):
+        input_gate = tf.sigmoid(tf.matmul(i, ix) + tf.matmul(prev_output, im) + ib)
+        forget_gate = tf.sigmoid(tf.matmul(i, fx) + tf.matmul(prev_output, fm) + fb)
+        update = tf.tanh(tf.matmul(i, cx) + tf.matmul(prev_output, cm) + cb)
+        state = forget_gate * prev_state + input_gate * update
+        output_gate = tf.sigmoid(tf.matmul(i, ox) + tf.matmul(prev_output, om) + ob)
         return output_gate * tf.tanh(state), state
 
     # unrolled ltsm loop
