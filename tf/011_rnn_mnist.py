@@ -10,7 +10,7 @@ mnist = input_data.read_data_sets(os.path.expanduser('~/data/mnist'),
                                   one_hot=True)
 
 learning_rate = 0.001
-batch_size = 128
+batch_size = 256
 
 n_input = 28
 n_steps = 28
@@ -70,9 +70,9 @@ def RNN(x, n_steps, n_input, n_hidden, n_classes):
         outputs.append(output)
 
     logits = tf.matmul(outputs[-1], w) + b
-    return logits
+    return logits, state
 
-pred = RNN(x, n_steps, n_input, n_hidden, n_classes)
+pred, state = RNN(x, n_steps, n_input, n_hidden, n_classes)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
@@ -89,10 +89,11 @@ for step in range(20000):
     if step % 50 == 0:
         acc = sess.run(accuracy, feed_dict={x: batch_x, y: batch_y})
         loss = sess.run(cost, feed_dict={x: batch_x, y: batch_y})
+        print(sess.run(state, feed_dict={x:batch_x, y:batch_y}))
         print('iter:{},batch loss={:.6f},train acc={:.6f}'.format(step, loss, acc))
 
 # test
-test_len = batch_size
+test_len = batch_size / 2
 test_data = mnist.test.images[:test_len].reshape((-1, n_steps, n_input))
 test_label = mnist.test.labels[:test_len]
 print('test acc={:.6f}'.format(sess.run(accuracy, feed_dict={x: test_data, y: test_label})))
