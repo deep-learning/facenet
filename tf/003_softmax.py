@@ -25,3 +25,5 @@ print(sess.run(cross_entropy))
 # calculate cross entropy
 cross_entropy = -tf.reduce_sum(y_ * tf.log(y))
 print(sess.run(cross_entropy))
+
+loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=logits))
